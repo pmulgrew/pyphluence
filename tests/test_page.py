@@ -208,6 +208,17 @@ def get_api_caller():
     return api_caller
 
 
+def get_mock_page():
+
+    page = Page(api_caller=get_api_caller())
+    page.id = 123456
+    page.title = 'Mock Page'
+    page.body = 'Mock Body'
+    page.space = 'Mock'
+    page.version = 1
+    page.parent = 654321
+
+
 class TestPage(unittest.TestCase):
     test_page_id = 11370497
 
@@ -392,6 +403,97 @@ class TestPage(unittest.TestCase):
         page.remove_all_labels()
         page.get()
         self.assertEqual(page.labels(), [])
+
+    def test_get_parent(self):
+        api_caller = get_api_caller()
+        page = Page(api_caller)
+        page.id = self.test_page_id
+        page.get()
+        parent = page.parent
+        self.assertEqual(parent.id, 65625)
+
+    def test_get_parent_none(self):
+        api_caller = get_api_caller()
+        page = Page(api_caller)
+        page.id = 65625
+        page.get()
+        parent = page.parent
+        self.assertIsNone(parent)
+
+    def test_set_parent_id(self):
+        api_caller = get_api_caller()
+        page = Page(api_caller)
+        page.id = self.test_page_id
+        page.parent_id = 65625
+        parent = page.parent
+        self.assertEqual(parent.id, 65625)
+
+    def test_set_parent_page(self):
+        api_caller = get_api_caller()
+        page = Page(api_caller)
+        page.id = self.test_page_id
+        parent = Page(api_caller)
+        parent.id = 65625
+        page.parent = parent
+        parent = page.parent
+        self.assertEqual(parent.id, 65625)
+
+    def test_set_body(self):
+        api_caller = get_api_caller()
+        page = Page(api_caller)
+        page.id = self.test_page_id
+        page.body = '<p>new body</p>'
+        self.assertEqual(page._data['body']['storage']['value'], '<p>new body</p>')
+
+    def test_save_delete_new_page(self):
+        api_caller = get_api_caller()
+        page = Page(api_caller)
+        page.title = 'new title'
+        page.space_key = 'WC'
+        page.body = '<p>new body</p>'
+        page.parent = 65625
+        page.save()
+        self.assertEqual(page.has_errors, False)
+        self.assertEqual(page.status_code, 200)
+        self.assertIsNotNone(page.id)
+
+        page.delete()
+
+        self.assertEqual(page.has_errors, False)
+        self.assertEqual(page.status_code, 200)
+        self.assertEqual(page.id, None)
+        self.assertEqual(page._data, {})
+
+    def test_update_page(self):
+        api_caller = get_api_caller()
+        page = Page(api_caller)
+        page.title = 'update test'
+        page.body = '<p>new body</p>'
+        page.space_key = 'WC'
+        page.parent = 65625
+        page.save()
+
+        self.assertEqual(page.has_errors, False)
+        self.assertEqual(page.status_code, 200)
+        self.assertEqual(page.title, 'update test')
+        self.assertEqual(page.body, '<p>new body</p>')
+
+        page.title = 'new updated title'
+        page.body = '<p>new updated body</p>'
+        page.save()
+        print(page.error)
+        self.assertEqual(page.has_errors, False)
+        self.assertEqual(page.status_code, 200)
+        self.assertEqual(page.title, 'new updated title')
+        self.assertEqual(page.body, '<p>new updated body</p>')
+        self.assertEqual(page.version, 2)
+
+        page.delete()
+
+        self.assertEqual(page.has_errors, False)
+        self.assertEqual(page.status_code, 200)
+        self.assertEqual(page.id, None)
+        self.assertEqual(page._data, {})
 
 
 if __name__ == '__main__':

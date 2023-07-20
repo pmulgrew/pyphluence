@@ -44,6 +44,28 @@ class TestSpace(unittest.TestCase):
         p = s.get_page(65625)
         self.assertEqual(p.status_code, 404)
 
+    def test_new_page(self):
+        s = Space(get_api_caller())
+        s.key = 'WC'
+        p = s.new_page()
+        self.assertIsInstance(p, Page)
+        self.assertEqual(p.space_key, s.key)
+
+    def test_new_space(self):
+        s = Space(get_api_caller())
+        s.key = 'abc'
+        s.name = 'Test space'
+        s.save()
+
+        self.assertEqual(s.has_errors, False)
+        self.assertIsInstance(s, Space)
+        self.assertEqual(s.key, 'abc')
+        self.assertEqual(s.name, 'Test space')
+        self.assertEqual(s.type, 'global')
+
+        s.delete()
+        self.assertEqual(s.has_errors, False)
+
 
 if __name__ == '__main__':
     unittest.main()

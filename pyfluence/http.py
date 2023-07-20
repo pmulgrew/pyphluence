@@ -18,7 +18,7 @@ class ApiResponse:
     """
     status_code: int = None
     data: dict = None
-    error_msg: str = None
+    error_msg: str | None = None
     has_errors: bool = False
 
     def __post_init__(self):
@@ -142,7 +142,7 @@ def _create_api_response(resp) -> ApiResponse:
         resp_json = {}
         error = "Error retrieving data from the server"
 
-    if resp.status_code == 204:
+    if resp.status_code == 204 or resp.status_code == 202:
         resp_json = {}
         resp.status_code = 200
 
@@ -193,10 +193,14 @@ def get_json_from_response(resp):
     :param resp:
     :return:
     """
+
+    if resp.status_code == 204:
+        return {}
+
     try:
         json_data = resp.json()
     except JSONDecodeError as e:
         logger.error("Error retrieving data from the server")
-        return None
+        return {}
 
     return json_data

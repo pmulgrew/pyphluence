@@ -1,9 +1,11 @@
 """
 This module contains the objects used to interact with the Confluence API
 """
+from __future__ import annotations
+
 from pyfluence.exceptions import PyfluenceIDNotSetException
 from pyfluence.http import ApiCaller
-from __future__ import annotations
+from . import logger
 
 
 class ApiModel:
@@ -14,6 +16,14 @@ class ApiModel:
         self._api_endpoints = {"get": "", "create": "", "update": "", "delete": ""}
         self._primary_identifier = "id"
         self._last_response = None
+
+    @property
+    def id(self):
+        return self._data.get('id', None)
+
+    @id.setter
+    def id(self, id):
+        self._data['id'] = id
 
     @property
     def status_code(self) -> int | None:
@@ -88,6 +98,36 @@ class ApiModel:
         self._last_response = self._api_caller.get(self._get_endpoint("get"), params={"expand": ",".join(self._expands)})
         self._data = self._last_response.data
 
+    def save(self):
+        update = self._is_update()
+
+        if not update:
+            self._last_response = self._api_caller.post(self._get_endpoint("create"), data=self._data)
+            logger.debug("Creating page")
+
+        if update:
+            self._last_response = self._api_caller.put(self._get_endpoint("update"), data=self._data)
+            logger.debug("Updating page")
+
+        self._data = self._last_response.data
+        self._update_endpoints()
+
+    def _is_update(self):
+        if getattr(self, "id"):
+            return True
+
+        return False
+
+    def delete(self):
+        if not getattr(self, self._primary_identifier):
+            raise PyfluenceIDNotSetException(f"Primary identifier ({self._primary_identifier}) not set. Unable to "
+                                             f"retrieve data.")
+
+        self._last_response = self._api_caller.delete(self._get_endpoint("delete"))
+
+        if self.status_code == 200:
+            self._data = {}
+
 
 class Page(ApiModel):
 
@@ -109,6 +149,8 @@ class Page(ApiModel):
             "export_view",
             "anonymous_export_view"
         ]
+
+        self._data['type'] = "page"
 
         # all pages should have these expands by default
         self.add_expand("body.storage")
@@ -175,6 +217,9 @@ class Page(ApiModel):
 
     @space_key.setter
     def space_key(self, space_key):
+        if 'space' not in self._data:
+            self._data['space'] = {}
+
         self._data['space']['key'] = space_key
 
     @property
@@ -203,7 +248,14 @@ class Page(ApiModel):
         :param body:
         :return:
         """
+        if 'body' not in self._data:
+            self._data['body'] = {}
+
+        if 'storage' not in self._data['body']:
+            self._data['body']['storage'] = {}
+
         self._data['body']['storage']['value'] = body
+        self._data['body']['storage']['representation'] = "storage"
 
     @property
     def parent(self) -> Page | None:
@@ -216,14 +268,11 @@ class Page(ApiModel):
             self.add_expand("ancestors")
             self.get()
 
-        if 'results' not in self._data['ancestors']:
-            return None
-
         if len(self._data['ancestors']) == 0:
             return None
 
         parent = Page(self._api_caller)
-        parent.id = self._data['ancestors']['results'][0]['id']
+        parent.id = self._data['ancestors'][0]['id']
         parent.get()
 
         return parent
@@ -231,21 +280,34 @@ class Page(ApiModel):
     @parent.setter
     def parent(self, parent_page: Page | int = None):
         """
-        Sets the parent page of the page.
+        Sets the parent page of the page. Can pass in a Page object or an int of the page id.
 
         :param parent_page:
         :return:
         """
+        parent_id = None
+
         if isinstance(parent_page, Page):
-            id = parent_page.id
+            parent_id = parent_page.id
 
-        elif isinstance(parent_page, int):
-            id = parent_page
+        if isinstance(parent_page, int):
+            parent_id = parent_page
 
-        else:
-            id = None
+        if 'ancestors' not in self._data:
+            self._data['ancestors'] = []
 
-        self._data['ancestors'][0]['id'] = id
+        self._data['ancestors'].insert(0, {'id': parent_id})
+
+    def save(self):
+        """
+        Saves the page to Confluence. If the page does not exist, it will be created.
+
+        :return:
+        """
+        if self._is_update():
+            self.version += 1
+
+        super().save()
 
     def get_body_representation(self, mode):
         """
@@ -347,7 +409,6 @@ class Space(ApiModel):
     def key(self, space_key):
         self._data['key'] = space_key
         self._update_endpoints()
-        self.get()
 
     @property
     def name(self):
@@ -396,6 +457,28 @@ class Space(ApiModel):
 
         return homepage
 
+    @property
+    def type(self):
+        if 'type' not in self._data:
+            return None
+
+        return self._data['type']
+
+    @type.setter
+    def type(self, space_type):
+        self._data['type'] = space_type
+
+    @property
+    def status(self):
+        if 'status' not in self._data:
+            return None
+
+        return self._data['status']
+
+    @status.setter
+    def status(self, space_status):
+        self._data['status'] = space_status
+
     def get_page(self, page_id):
         if self.has_errors:
             raise ValueError(self.error)
@@ -416,6 +499,8 @@ class Space(ApiModel):
         if self.has_errors:
             raise ValueError(self.error)
 
+        parent_id = parent_id or self.homepage_id
+
         page = Page(self._api_caller)
         page.space_key = self.key
         page.title = title
@@ -423,3 +508,4 @@ class Space(ApiModel):
         page.parent_id = parent_id
 
         return page
+
