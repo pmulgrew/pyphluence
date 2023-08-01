@@ -6,8 +6,8 @@ import dataclasses
 import requests
 from requests import JSONDecodeError
 
-from pyfluence import logger
-from pyfluence.exceptions import BaseURLNotSetException
+from pyphluence import logger
+from pyphluence.exceptions import BaseURLNotSetException
 
 
 @dataclasses.dataclass

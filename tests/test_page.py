@@ -1,10 +1,10 @@
 import unittest
 from unittest import mock
 
-from pyfluence.exceptions import PyfluenceIDNotSetException
-from pyfluence.http import ApiCaller, ApiResponse
-from pyfluence.objects import Page
-from pyfluence.utils import ConfluenceConfig
+from pyphluence.exceptions import PyfluenceIDNotSetException
+from pyphluence.http import ApiCaller, ApiResponse
+from pyphluence.objects import Page
+from pyphluence.utils import ConfluenceConfig
 
 
 class MockApiCaller:

@@ -6,7 +6,7 @@ from .exceptions import PyfluenceConfigFileNotFound, PyfluenceConfigSectionNotFo
 
 class ConfluenceConfig:
     """
-    ConfluenceConfig is a class that handles the configuration for pyfluence
+    ConfluenceConfig is a class that handles the configuration for pyphluence
 
     :param config_file: the name of the config file
     :param config_path: the path to the config file
@@ -25,10 +25,10 @@ class ConfluenceConfig:
 
     """
     _config_file: str = 'config.cfg'
-    _config_path: str = '.pyfluence'
+    _config_path: str = '.pyphluence'
     _config_in_home: bool = True
 
-    def __init__(self, config_file: str = 'config.cfg', config_path: str = '.pyfluence', config_in_home: bool = True):
+    def __init__(self, config_file: str = 'config.cfg', config_path: str = '.pyphluence', config_in_home: bool = True):
         self._config_file = config_file
         self._config_path = config_path
         self._config_in_home = config_in_home

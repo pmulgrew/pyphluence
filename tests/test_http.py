@@ -1,4 +1,4 @@
-import pyfluence.http as network
+import pyphluence.http as network
 import unittest
 from unittest import mock
 

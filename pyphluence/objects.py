@@ -3,8 +3,8 @@ This module contains the objects used to interact with the Confluence API
 """
 from __future__ import annotations
 
-from pyfluence.exceptions import PyfluenceIDNotSetException
-from pyfluence.http import ApiCaller
+from pyphluence.exceptions import PyfluenceIDNotSetException
+from pyphluence.http import ApiCaller
 from . import logger
 
 
@@ -22,8 +22,8 @@ class ApiModel:
         return self._data.get('id', None)
 
     @id.setter
-    def id(self, id):
-        self._data['id'] = id
+    def id(self, obj_id):
+        self._data['id'] = obj_id
 
     @property
     def status_code(self) -> int | None:
@@ -42,7 +42,7 @@ class ApiModel:
     @property
     def has_errors(self) -> bool:
         if not self._last_response:
-            return True # Assume error if no response
+            return True  # Assume error if no response
 
         return self._last_response.has_errors
 
@@ -95,7 +95,8 @@ class ApiModel:
             raise PyfluenceIDNotSetException(f"Primary identifier ({self._primary_identifier}) not set. Unable to "
                                              f"retrieve data.")
 
-        self._last_response = self._api_caller.get(self._get_endpoint("get"), params={"expand": ",".join(self._expands)})
+        self._last_response = self._api_caller.get(self._get_endpoint("get"),
+                                                   params={"expand": ",".join(self._expands)})
         self._data = self._last_response.data
 
     def save(self):
@@ -387,12 +388,14 @@ class Page(ApiModel):
 class Space(ApiModel):
     def __init__(self, api_caller: ApiCaller):
         super().__init__(api_caller)
+        self._scan_results = None
         self._primary_identifier = "key"
         self._api_endpoints = {
             "get": "/rest/api/space/{primary}",
             "create": "/rest/api/space",
             "update": "/rest/api/space/{primary}",
             "delete": "/rest/api/space/{primary}",
+            "scan": "/resp/api/content/scan"
         }
 
         self.add_expand("description.plain")
@@ -509,3 +512,31 @@ class Space(ApiModel):
 
         return page
 
+    def scan(self, status="any", cursor=None, limit=25):
+        """
+        uses the confluence scan endpoint to get pages based on status
+
+        only available on server/data center
+        :return:
+        """
+        self._scan_results = []
+
+        params = {
+            "spaceKey": self.key,
+            "status": status,
+        }
+
+        response = self._api_caller.get(self._get_endpoint("scan"), params=params)
+
+        if response.has_errors:
+            return None
+
+        self._last_response = response
+
+        for result in response.data['results']:
+            self._scan_results.append(result)
+
+        if "nextCursor" in response.data:
+            self.scan(status, response.data['nextCursor'], limit)
+
+        return self._scan_results

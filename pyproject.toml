@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "pyfluence"
+name = "pyphluence"
 version = "0.1.0"
-description = ""
+description = "Confluence API python library"
 authors = ["Paul Mulgrew <pmulgrew@live.com>"]
 readme = "README.md"
 packages = [

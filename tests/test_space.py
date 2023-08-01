@@ -1,9 +1,9 @@
 import unittest
 
-from pyfluence.exceptions import PyfluenceIDNotSetException
-from pyfluence.objects import Space, Page
-from pyfluence.utils import ConfluenceConfig
-from pyfluence.http import ApiCaller
+from pyphluence.exceptions import PyfluenceIDNotSetException
+from pyphluence.objects import Space, Page
+from pyphluence.utils import ConfluenceConfig
+from pyphluence.http import ApiCaller
 
 
 def get_api_caller():

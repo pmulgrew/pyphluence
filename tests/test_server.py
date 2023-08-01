@@ -1,7 +1,7 @@
 import unittest
-from pyfluence import server
-from pyfluence.objects import Page
-from pyfluence.exceptions import PyfluenceConfigSectionNotFound
+from pyphluence import server
+from pyphluence.objects import Page
+from pyphluence.exceptions import PyfluenceConfigSectionNotFound
 
 
 class TestServer(unittest.TestCase):
@@ -24,6 +24,21 @@ class TestServer(unittest.TestCase):
         page = s.get_page(self.test_page_id)
         self.assertEqual(page.id, self.test_page_id)
         self.assertIsInstance(page, Page)
+
+    def test_create_space(self):
+        s = server.connect('DEFAULT')
+        space = s.create_space('Test space', 'abc')
+        self.assertEqual(space.key, 'abc')
+        self.assertEqual(space.name, 'Test space')
+        self.assertEqual(space.description, '')
+        space.delete()
+
+    def test_get_space(self):
+        s = server.connect('DEFAULT')
+        space = s.get_space('test')
+        self.assertEqual(space.key, 'test')
+        self.assertEqual(space.name, 'test')
+        self.assertEqual(space.description, '')
 
 
 if __name__ == '__main__':

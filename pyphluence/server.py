@@ -1,7 +1,7 @@
 from . import logger
 from .utils import ConfluenceConfig
 from .http import ApiCaller
-from .objects import Page
+from .objects import Page, Space
 
 
 class ConfluenceServer:
@@ -15,13 +15,42 @@ class ConfluenceServer:
         """
         Gets a page by its ID
         :param page_id: int
-        :return: pyfluence.objects.Page
+        :return: pyphluence.objects.Page
         """
 
         page = Page(self._api_caller)
         page.id = page_id
         page.get()
         return page
+
+    def get_space(self, space_key: str):
+        """
+        Gets a space by its key
+        :param space_key: str
+        :return: pyphluence.objects.Space
+        """
+
+        space = Space(self._api_caller)
+        space.key = space_key
+        space.get()
+        return space
+
+    def create_space(self, name: str, space_key: str, description: str = None):
+        """
+        Creates a new space
+        :param name:
+        :param description:
+        :param space_key: str
+        :return: pyphluence.objects.Space
+        """
+
+        space = Space(self._api_caller)
+        space.key = space_key
+        space.name = name
+        if description is not None:
+            space.description = description
+        space.save()
+        return space
 
 
 def connect(config_section=None) -> ConfluenceServer:
