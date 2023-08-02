@@ -571,7 +571,7 @@ class Space(ApiModel):
             self._scan_results.append(result)
 
         if "nextCursor" in response.data:
-            self.scan(status=status, cursor=response.data['nextCursor'], limit=limit)
+            self.scan(status=status, cursor=response.data['nextCursor'], limit=limit, expand=expand)
 
         return self._scan_results
 
