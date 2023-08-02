@@ -89,6 +89,7 @@ class ApiCaller:
         :param params: the parameters to pass to the endpoint
         :return: the response from the API
         """
+        logger.debug(f"GET {self._base_url}{api_endpoint} params: {params}")
         resp = self._session.get("%s%s" % (self._base_url, api_endpoint),
                                  headers=self._headers, params=params)
 
@@ -135,6 +136,7 @@ class ApiCaller:
 
 def _create_api_response(resp) -> ApiResponse:
     resp_json = get_json_from_response(resp)
+    logger.debug(f"Response: {resp_json} {resp.status_code}")
     error = None
 
     if resp_json is None and not resp.status_code:

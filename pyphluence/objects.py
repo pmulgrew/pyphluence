@@ -198,6 +198,10 @@ class Page(ApiModel):
 
         return self._data['status']
 
+    @status.setter
+    def status(self, status):
+        self._data['status'] = status
+
     @property
     def version(self):
         if 'version' not in self._data:
@@ -207,6 +211,9 @@ class Page(ApiModel):
 
     @version.setter
     def version(self, version):
+        if 'version' not in self._data:
+            self._data['version'] = {}
+
         self._data['version']['number'] = version
 
     @property
@@ -288,6 +295,9 @@ class Page(ApiModel):
         """
         parent_id = None
 
+        if isinstance(parent_page, str):
+            parent_id = int(parent_page)
+
         if isinstance(parent_page, Page):
             parent_id = parent_page.id
 
@@ -305,10 +315,22 @@ class Page(ApiModel):
 
         :return:
         """
+        self.surpress_notifications()
+
         if self._is_update():
             self.version += 1
 
         super().save()
+
+    def surpress_notifications(self):
+        """
+       stops emails being sent when the page is saved.
+
+        :return:
+        """
+        self._data['version']['minorEdit'] = True
+
+
 
     def get_body_representation(self, mode):
         """
@@ -395,7 +417,7 @@ class Space(ApiModel):
             "create": "/rest/api/space",
             "update": "/rest/api/space/{primary}",
             "delete": "/rest/api/space/{primary}",
-            "scan": "/resp/api/content/scan"
+            "scan": "/rest/api/content/scan"
         }
 
         self.add_expand("description.plain")
@@ -512,19 +534,31 @@ class Space(ApiModel):
 
         return page
 
-    def scan(self, status="any", cursor=None, limit=25):
+    def scan(self, status="any", expand=None, cursor=None, limit=25):
         """
         uses the confluence scan endpoint to get pages based on status
 
         only available on server/data center
         :return:
         """
-        self._scan_results = []
+        logger.debug(f"Scanning space {self.key} for pages with status {status}")
+
+        if not cursor:
+            self._scan_results = []
 
         params = {
             "spaceKey": self.key,
             "status": status,
         }
+
+        if expand:
+            params['expand'] = expand
+
+        if cursor:
+            params['cursor'] = cursor
+
+        if limit and limit != 25:
+            params['limit'] = limit
 
         response = self._api_caller.get(self._get_endpoint("scan"), params=params)
 
@@ -537,6 +571,27 @@ class Space(ApiModel):
             self._scan_results.append(result)
 
         if "nextCursor" in response.data:
-            self.scan(status, response.data['nextCursor'], limit)
+            self.scan(status=status, cursor=response.data['nextCursor'], limit=limit)
 
         return self._scan_results
+
+    def restore_page(self, page_id, version=None, parent_id=None):
+        """
+        Restores a page from the trash.
+
+        :param parent_id:
+        :param page_id:
+        :param version:
+        :return:
+        """
+        restore = Page(self._api_caller)
+        restore.id = page_id
+        restore.version = version
+        restore.status = "current"
+
+        restore.save()
+
+        if parent_id:
+            restore.get()
+            restore.parent = parent_id
+            restore.save()

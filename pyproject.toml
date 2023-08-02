@@ -5,7 +5,7 @@ description = "Confluence API python library"
 authors = ["Paul Mulgrew <pmulgrew@live.com>"]
 readme = "README.md"
 packages = [
-    { include = "pyfluence", from = "." },
+    { include = "pyphluence", from = "." },
 ]
 
 [tool.poetry.dependencies]
